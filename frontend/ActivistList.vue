@@ -424,7 +424,7 @@ export default {
         },
         error: () => {
           console.warn(err.responseText);
-          flasMessage("Server error: " + err.responseText, true);
+          flashMessage("Server error: " + err.responseText, true);
         },
       });
     },
