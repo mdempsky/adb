@@ -7,11 +7,19 @@
 <script>
 import HotTable from 'vue-handsontable-official';
 import Vue from 'vue';
+import {flashMessage} from 'flash_message';
 
 // Constants related to list ordering
 // Corresponds to the constants DescOrder and AscOrder in model/activist.go
 const DescOrder = 2;
 const AscOrder = 1;
+
+
+function optionsButtonRenderer(instance, td, row, col, prop, value, cellProperties) {
+  // SAMER: do something on click?
+  td.innerHTML = '<button data-role="trigger" class="btn btn-default"></button>';
+  return td;
+}
 
 export default {
   name: 'activist-list',
@@ -49,10 +57,7 @@ export default {
       var previousData = change[0][2];
       var newData = change[0][3];
 
-      console.log(this.activists);
       var activist = this.activists[columnIndex];
-      console.log(columnIndex, change);
-      console.log(activist);
 
       $.ajax({
         url: "/activist/save",
@@ -60,11 +65,16 @@ export default {
         contentType: "application/json",
         data: JSON.stringify(activist),
         success: (data) => {
-          console.log("hooray");
-          console.log(this.activists);
+          var parsed = JSON.parse(data);
+          if (parsed.status === "error") {
+            flashMessage("Error: " + parsed.message, true);
+            return;
+          }
+          flashMessage(activist.name + " saved");
         },
         error: (err) => {
           console.warn(err.responseText);
+          flashMessage("Server error: " + err.responseText, true);
         },
       });
     },
@@ -75,6 +85,13 @@ export default {
       root: 'activists-root',
       activists: [],
       columns: [{
+        header: 'Options',
+        data: {
+          renderer: optionsButtonRenderer,
+          readOnly: true,
+          disableVisualSelection: true,
+        }
+      }, {
         header: 'Name',
         data: {
           data: 'name',
@@ -107,27 +124,33 @@ export default {
       }, {
         header: 'Core/Staff',
         data: {
+          // SAMER: use 'checkbox' instead
+          type: 'numeric',
           data: 'core_staff',
         }
       }, {
         header: 'Liberation Pledge',
         data: {
+          type: 'numeric',
           data: 'liberation_pledge',
         },
       }, {
         header: 'Global Team Member',
         data: {
+          type: 'numeric',
           data: 'global_team_member',
         },
       }, {
         header: 'First Event',
         data: {
+          type: 'date',
           data: 'first_event',
           readOnly: true
         },
       }, {
         header: 'Last Event',
         data: {
+          type: 'date',
           data: 'last_event',
           readOnly: true,
         },
@@ -163,8 +186,14 @@ export default {
         data: this.activists,
         columns: columns,
         colHeaders: columnHeaders,
-        disableVisualSelection: true,
+        // SAMER: Disable area selection in general?
+        disableVisualSelection: 'area',
+        multiSelect: false,
+        // SAMER: do we want to enable this?
+        fillHandle: false,
         afterChange: this.afterChangeCallback.bind(this),
+        // SAMER: not sure if this works
+        undo: true,
       };
     },
   },
@@ -175,6 +204,7 @@ export default {
     HotTable,
   },
 }
+
 </script>
 
 <style>
