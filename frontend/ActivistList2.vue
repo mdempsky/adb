@@ -1,11 +1,14 @@
 <template>
+
   <div id="hot-preview">
-    <HotTable :root="root" :settings="hotSettings"></HotTable>
+    <button v-on:click="stuff">yoyo</button>
+    <HotTable :root="root" :settings="hotSettings" :data="activists"></HotTable>
   </div>
+
 </template>
 
 <script>
-import HotTable from 'vue-handsontable-official';
+import HotTable from 'external/vue-handsontable-official/HotTable.vue';
 import Vue from 'vue';
 import {flashMessage} from 'flash_message';
 
@@ -15,15 +18,21 @@ const DescOrder = 2;
 const AscOrder = 1;
 
 
+
+
 function optionsButtonRenderer(instance, td, row, col, prop, value, cellProperties) {
   // SAMER: do something on click?
-  td.innerHTML = '<button data-role="trigger" class="btn btn-default"></button>';
+  console.log(row, col);
+  td.innerHTML = '<button data-role="trigger" class="btn btn-default" onclick="console.log(' + row + ')">heyo</button>';
   return td;
 }
 
 export default {
   name: 'activist-list',
   methods: {
+    stuff: function() {
+      this.columns = this.columns.slice(1);
+    },
     loadActivists: function() {
       $.ajax({
           url: "/activist/list_range",
@@ -49,7 +58,9 @@ export default {
         });
     },
     afterChangeCallback: function(change, source) {
-      if (source !== 'edit') {
+      if (source !== 'edit' &&
+          source !== 'UndoRedo.undo' &&
+          source !== 'UndoRedo.redo') {
         return;
       }
       var columnIndex = change[0][0];
@@ -70,7 +81,6 @@ export default {
             flashMessage("Error: " + parsed.message, true);
             return;
           }
-          flashMessage(activist.name + " saved");
         },
         error: (err) => {
           console.warn(err.responseText);
@@ -183,7 +193,6 @@ export default {
         columnHeaders.push(this.columns[i].header);
       }
       return {
-        data: this.activists,
         columns: columns,
         colHeaders: columnHeaders,
         // SAMER: Disable area selection in general?
