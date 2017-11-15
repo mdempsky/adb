@@ -126,7 +126,7 @@ export function propWatchFactory(updateFunction, bulkUpdateFunction) {
 // The `this` value in the functions below points to the Vue component instance. They're not meant to used anywhere but in the context of the component.
 
 
-let dataHasBeenAdded = false;
+let dataNumRows = -1;
 /**
  * Update the Handsontable instance with a single changed property.
  *
@@ -135,10 +135,12 @@ let dataHasBeenAdded = false;
  * @param {Object} oldValue Watcher-generated old value object.
  */
 export function updateHotSettings(updatedProperty, updatedValue, oldValue) {
-  if (dataHasBeenAdded) {
-    return;
+  if (updatedProperty === 'data') {
+    if (updatedValue.length === dataNumRows) {
+      return;
+    }
+    dataNumRows = updatedValue.length;
   }
-  dataHasBeenAdded = true;
 
   const newSettings = {};
 
