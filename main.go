@@ -102,6 +102,19 @@ func setAuthSession(w http.ResponseWriter, r *http.Request, adbUser model.ADBUse
 	return sessionStore.Save(r, w, authSession)
 }
 
+// staticDir serves the specified native file system directory under a
+// given path prefix.
+func staticDir(router *mux.Router, prefix, dir string) {
+	h := http.FileServer(http.Dir(dir))
+
+	// Disable caching for development.
+	if !config.IsProd {
+		h = noCacheHandler(h)
+	}
+
+	router.PathPrefix(prefix).Handler(http.StripPrefix(prefix, h))
+}
+
 func noCacheHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -193,13 +206,9 @@ func router() (*mux.Router, *sqlx.DB) {
 	router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	router.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
-	if config.IsProd {
-		router.PathPrefix("/static").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-		router.PathPrefix("/dist").Handler(http.StripPrefix("/dist/", http.FileServer(http.Dir("dist"))))
-	} else {
-		router.PathPrefix("/static").Handler(noCacheHandler(http.StripPrefix("/static/", http.FileServer(http.Dir("static")))))
-		router.PathPrefix("/dist").Handler(noCacheHandler(http.StripPrefix("/dist/", http.FileServer(http.Dir("dist")))))
-	}
+	staticDir(router, "/static/", "static")
+	staticDir(router, "/dist/", "dist")
+
 	return router, db
 }
 
